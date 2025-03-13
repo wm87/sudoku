@@ -1,0 +1,77 @@
+body {
+    font-family: Arial, sans-serif;
+    text-align: center;
+}
+
+#sudoku-wrapper {
+    margin: 20px auto;
+    max-width: 500px;
+}
+
+.sudoku-grid {
+    display: grid;
+    grid-template-columns: repeat(9, 1fr);
+    margin: auto;
+    background-color: black;
+    width: 450px;
+}
+
+.sudoku-cell {
+    width: 50px;
+    height: 50px;
+    background-color: white;
+    border: 1px solid black;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.sudoku-cell input.cell-input {
+    width: 45px;
+    height: 45px;
+    text-align: center;
+    border: none;
+    font-size: 20px;
+    outline: none;
+}
+
+.sudoku-cell input.cell-input.error {
+    background-color: #ffcccc;
+}
+
+.given {
+    font-size: 20px;
+    color: black;
+}
+
+#sudoku-container{
+    margin-bottom:30px;
+}
+
+/* Dickere Rahmen an den 3x3-Grenzen */
+.bottom-border {
+    border-bottom: 3px solid black;
+}
+
+.right-border {
+    border-right: 3px solid black;
+}
+
+/* Button-Styling */
+.button-container {
+    display: flex;
+    justify-content: center;
+    gap: 10px;
+    margin-top: 30px;
+    margin-bottom: 20px;
+}
+
+/* Überschrift */
+.title {
+    font-size: 28px;
+    margin-bottom: 20px;
+}
+
+.cell-input.error {
+    background-color: #ffcccc;
+}
