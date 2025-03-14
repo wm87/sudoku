@@ -10,13 +10,6 @@ $(document).ready(function () {
     // Neues Spiel starten (Standard: Medium)
     newGame();
 
-    function shuffle(array) {
-        for (let i = array.length - 1; i > 0; i--) {
-            let j = Math.floor(Math.random() * (i + 1));
-            [array[i], array[j]] = [array[j], array[i]];
-        }
-    }
-
     function isValid(board, row, col, num) {
         for (let i = 0; i < 9; i++) {
             if (board[row][i] === num || board[i][col] === num) {
@@ -108,17 +101,35 @@ $(document).ready(function () {
         return board;
     }
 
-    // Entfernt Zahlen gemäß Schwierigkeitsgrad ("easy": 40, "medium": 30, "hard": 25 bleiben sichtbar)
+    function shuffle(array) {
+        for (let i = array.length - 1; i > 0; i--) {
+            let j = Math.floor(Math.random() * (i + 1));
+            [array[i], array[j]] = [array[j], array[i]];
+        }
+    }
+
     function removeNumbers(board, level) {
         let clues = level === "easy" ? 40 : level === "medium" ? 30 : 25;
+        let toRemove = (81 - clues) / 2; // Anzahl der zu entfernenden Zahlen pro Paar
         let positions = [];
+
+        // Fülle die Liste mit symmetrischen Positionen
         for (let i = 0; i < 9; i++) {
             for (let j = 0; j < 9; j++) {
-                positions.push([i, j]);
+                if (i * 9 + j < 81 / 2) { // Vermeidung doppelter Paare
+                    positions.push([i, j]);
+                }
             }
         }
+
         shuffle(positions);
-        positions.slice(0, 81 - clues).forEach(([row, col]) => board[row][col] = "_");
+
+        for (let k = 0; k < toRemove; k++) {
+            let [row, col] = positions[k];
+            let symRow = 8 - row, symCol = 8 - col; // Spiegelung über das Zentrum
+            board[row][col] = "_";
+            board[symRow][symCol] = "_";
+        }
     }
 
     // Neues Spiel: Generiert ein neues Sudoku, speichert die Lösung und entfernt Zahlen.
