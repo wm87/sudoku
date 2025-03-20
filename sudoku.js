@@ -1,28 +1,33 @@
 "use strict";
 
 $(document).ready(function () {
-
     let sudokuBoard, solutionBoard;
+    const toggleSolutionBtn = $("#toggle-solution");
+    let isSolutionVisible = false;
+    let solvedBoard = [];
+    let userInputs = {}; // Speichert Nutzereingaben anhand data-row und data-col
 
-    const solveGameBtn = $("#solve-game");
-    const newGameBtn = $("#new-game");
-
-    // Neues Spiel starten (Standard: Medium)
     newGame();
+
+    solvedBoard = JSON.parse(JSON.stringify(sudokuBoard));
+    solveSudoku(solvedBoard);
+
+    toggleSolutionBtn.on("click", function () {
+        isSolutionVisible = !isSolutionVisible;
+        generateBoardHTML(isSolutionVisible ? solutionBoard : sudokuBoard);
+        restoreUserInputs();
+        toggleSolutionBtn.text(isSolutionVisible ? "Rätsel anzeigen" : "Lösung anzeigen");
+    });
 
     function isValid(board, row, col, num) {
         for (let i = 0; i < 9; i++) {
-            if (board[row][i] === num || board[i][col] === num) {
-                return false;
-            }
+            if (board[row][i] === num || board[i][col] === num) return false;
         }
         let startRow = Math.floor(row / 3) * 3;
         let startCol = Math.floor(col / 3) * 3;
         for (let i = 0; i < 3; i++) {
             for (let j = 0; j < 3; j++) {
-                if (board[startRow + i][startCol + j] === num) {
-                    return false;
-                }
+                if (board[startRow + i][startCol + j] === num) return false;
             }
         }
         return true;
@@ -46,33 +51,17 @@ $(document).ready(function () {
         return board;
     }
 
-    function swapRowsCols(board) {
-        let swapCount = Math.floor(Math.random() * (81 - 10 + 1)) + 10;
-        for (let i = 0; i < swapCount; i++) {
-            if (Math.random() < 0.5) {
-                let row1 = Math.floor(Math.random() * 9);
-                let row2 = Math.floor(Math.random() * 9);
-                [board[row1], board[row2]] = [board[row2], board[row1]];
-            } else {
-                let col1 = Math.floor(Math.random() * 9);
-                let col2 = Math.floor(Math.random() * 9);
-                for (let row = 0; row < 9; row++) {
-                    [board[row][col1], board[row][col2]] = [board[row][col2], board[row][col1]];
-                }
-            }
-        }
-    }
-
-    // Generiert das HTML-Board. Vorgegebene Zahlen erscheinen als Span, leere Zellen als Input-Felder.
     function generateBoardHTML(board) {
         let html = '<div class="sudoku-grid">';
         board.forEach((row, rowIndex) => {
             row.forEach((cell, colIndex) => {
                 let borderClass = (rowIndex % 3 === 2 && rowIndex !== 8 ? "bottom-border " : "") +
-                                  (colIndex % 3 === 2 && colIndex !== 8 ? "right-border" : "");
+                    (colIndex % 3 === 2 && colIndex !== 8 ? "right-border" : "");
                 html += `<div class="sudoku-cell ${borderClass}">`;
                 if (cell === "_") {
-                    html += `<input type="text" maxlength="1" data-row="${rowIndex}" data-col="${colIndex}" class="cell-input" />`;
+                    let key = `${rowIndex}-${colIndex}`;
+                    let userVal = userInputs[key] || "";
+                    html += `<input type="text" maxlength="1" data-row="${rowIndex}" data-col="${colIndex}" class="cell-input" value="${userVal}"/>`;
                 } else {
                     html += `<span class="given">${cell}</span>`;
                 }
@@ -81,9 +70,38 @@ $(document).ready(function () {
         });
         html += '</div>';
         $("#sudoku-container").html(html);
+
+        // Speichern der Nutzereingaben bei jeder Änderung
+        $(".cell-input").on("input", function () {
+            let row = $(this).attr("data-row");
+            let col = $(this).attr("data-col");
+            userInputs[`${row}-${col}`] = $(this).val().trim();
+        });
     }
 
-    // Generiert ein vollständiges, gelöstes Sudoku aus einer Vorlage.
+    function restoreUserInputs() {
+        $(".cell-input").each(function () {
+            let row = $(this).attr("data-row");
+            let col = $(this).attr("data-col");
+            let key = `${row}-${col}`;
+            if (userInputs[key]) {
+                $(this).val(userInputs[key]);
+            }
+        });
+    }
+
+    function newGame() {
+        userInputs = {}; // Reset der Userdaten
+        let level = $("#difficulty").val();
+        let fullBoard = generateFullSudoku();
+        sudokuBoard = fullBoard.map(row => row.slice());
+        removeNumbers(sudokuBoard, level);
+        solvedBoard = JSON.parse(JSON.stringify(sudokuBoard));
+        solveSudoku(solvedBoard);
+        solutionBoard = solvedBoard;
+        generateBoardHTML(sudokuBoard);
+    }
+
     function generateFullSudoku() {
         let board = [
             ["_", 8, "_", "_", "_", "_", "_", "_", "_"],
@@ -101,6 +119,41 @@ $(document).ready(function () {
         return board;
     }
 
+    function swapRowsCols(board) {
+        let swapCount = Math.floor(Math.random() * (81 - 10 + 1)) + 10;
+        for (let i = 0; i < swapCount; i++) {
+            if (Math.random() < 0.5) {
+                let row1 = Math.floor(Math.random() * 9);
+                let row2 = Math.floor(Math.random() * 9);
+                [board[row1], board[row2]] = [board[row2], board[row1]];
+            } else {
+                let col1 = Math.floor(Math.random() * 9);
+                let col2 = Math.floor(Math.random() * 9);
+                for (let row = 0; row < 9; row++) {
+                    [board[row][col1], board[row][col2]] = [board[row][col2], board[row][col1]];
+                }
+            }
+        }
+    }
+
+    function removeNumbers(board, level) {
+        let clues = level === "easy" ? 40 : level === "medium" ? 30 : 25;
+        let toRemove = (81 - clues) / 2;
+        let positions = [];
+        for (let i = 0; i < 9; i++) {
+            for (let j = 0; j < 9; j++) {
+                if (i * 9 + j < 81 / 2) positions.push([i, j]);
+            }
+        }
+        shuffle(positions);
+        for (let k = 0; k < toRemove; k++) {
+            let [row, col] = positions[k];
+            let symRow = 8 - row, symCol = 8 - col;
+            board[row][col] = "_";
+            board[symRow][symCol] = "_";
+        }
+    }
+
     function shuffle(array) {
         for (let i = array.length - 1; i > 0; i--) {
             let j = Math.floor(Math.random() * (i + 1));
@@ -108,42 +161,7 @@ $(document).ready(function () {
         }
     }
 
-    function removeNumbers(board, level) {
-        let clues = level === "easy" ? 40 : level === "medium" ? 30 : 25;
-        let toRemove = (81 - clues) / 2; // Anzahl der zu entfernenden Zahlen pro Paar
-        let positions = [];
-
-        // Fülle die Liste mit symmetrischen Positionen
-        for (let i = 0; i < 9; i++) {
-            for (let j = 0; j < 9; j++) {
-                if (i * 9 + j < 81 / 2) { // Vermeidung doppelter Paare
-                    positions.push([i, j]);
-                }
-            }
-        }
-
-        shuffle(positions);
-
-        for (let k = 0; k < toRemove; k++) {
-            let [row, col] = positions[k];
-            let symRow = 8 - row, symCol = 8 - col; // Spiegelung über das Zentrum
-            board[row][col] = "_";
-            board[symRow][symCol] = "_";
-        }
-    }
-
-    // Neues Spiel: Generiert ein neues Sudoku, speichert die Lösung und entfernt Zahlen.
-    function newGame() {
-        let level = $("#difficulty").val();
-        let fullBoard = generateFullSudoku();
-        solutionBoard = fullBoard.map(row => row.slice());
-        sudokuBoard = fullBoard.map(row => row.slice());
-        removeNumbers(sudokuBoard, level);
-        generateBoardHTML(sudokuBoard);
-    }
-
-    // Beim "Lösen"-Button: Alle leeren Felder werden mit der korrekten Lösung gefüllt,
-    // und falsche Eingaben werden rot markiert.
+    // "Lösen" markiert nur Fehler, füllt aber nichts automatisch aus
     $("#solve-game").on("click", function () {
         $(".cell-input").each(function () {
             let $input = $(this);
@@ -151,7 +169,10 @@ $(document).ready(function () {
             let col = parseInt($input.attr("data-col"));
             let userVal = $input.val().trim();
             let correctVal = solutionBoard[row][col];
-            if (userVal === "" || parseInt(userVal) !== correctVal) {
+
+            if (userVal === "") {
+                $input.removeClass("error");
+            } else if (parseInt(userVal) !== correctVal) {
                 $input.addClass("error");
             } else {
                 $input.removeClass("error");
@@ -159,7 +180,6 @@ $(document).ready(function () {
         });
     });
 
-    // Beim "Neues Spiel"-Button wird ein neues Puzzle generiert
     $("#new-game").on("click", function () {
         newGame();
     });

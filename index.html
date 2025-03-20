@@ -7,12 +7,14 @@
     <link rel="stylesheet" href="styles.css">
     <script src="https://code.jquery.com/jquery-3.7.1.min.js"></script>
 </head>
+
 <body>
     <div id="sudoku-wrapper">
         <h1 class="title">Sudoku spielen</h1>
         <div class="button-container">
             <button type="button" id="new-game">Neues Spiel</button>
-            <button type="button" id="solve-game">Lösen</button>
+            <button type="button" id="solve-game">Prüfen</button>
+            <button type="button" id="toggle-solution">Lösung anzeigen</button>
         </div>
         <div id="sudoku-container"></div>
         <label for="difficulty">Schwierigkeitsgrad:</label>
@@ -24,4 +26,5 @@
     </div>
     <script src="sudoku.js" defer></script>
 </body>
+
 </html>
